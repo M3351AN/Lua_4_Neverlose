@@ -1,0 +1,32 @@
+
+local function setup_dormant_aimbot(cmd)
+	local local_index = EngineClient.GetLocalPlayer()
+	local players = EntityList.GetEntitiesByName("CCSPlayer")
+	local local_player = EntityList.GetClientEntity(local_index):GetPlayer()
+	local active_weapon = local_player:GetActiveWeapon()
+	if active_weapon == nil or not dormant_enable:GetBool() then
+		return
+	end
+
+	local weapon_id = active_weapon:GetWeaponID()
+	local players = EntityList.GetEntitiesByName("CCSPlayer")
+	if dormant_enable:GetBool() and get_dormant_enemy() then
+		local dormant_target = players[get_dormant_enemy()]:GetPlayer()
+		local weap_delay = (weapon_id == 9 or weapon_id == 40) and 0.15 or 0.0
+		if dormant_target and weap_delay and active_weapon:GetProp("m_flNextPrimaryAttack") and GlobalVars.curtime and active_weapon:GetProp("m_flNextPrimaryAttack") + weap_delay <= GlobalVars.curtime and local_player:GetProp("m_bIsScoped") and not entity_jumping(local_player) then
+			local bounds = dormant_target:GetRenderBounds(Vector.new(), Vector.new())
+			local pos = dormant_target:GetProp("m_vecOrigin") + Vector.new((Vector.new().x + Vector.new().x) / 4, (Vector.new().y + Vector.new().y) / 16, (Vector.new().z + Vector.new().z / 2))
+			if Cheat.FireBullet(local_player, local_player:GetEyePosition(), pos).damage >= dormant_dmg:GetInt() then
+				dormant_auto_stop(cmd)
+				if 1 / active_weapon:GetInaccuracy(active_weapon) >= 100 then
+					local getaimpunch = local_player:GetProp("DT_BasePlayer", "m_aimPunchAngle")
+					local aimpunch = QAngle.new(getaimpunch.x, getaimpunch.y, 0.0)
+					local aim_angle = calc_angle(local_player:GetEyePosition(), pos)
+					cmd.viewangles.pitch = aim_angle.pitch - aimpunch.pitch * 2
+					cmd.viewangles.yaw = aim_angle.yaw - aimpunch.yaw * 2
+					cmd.buttons = bit.bor(cmd.buttons, 1)
+				end
+			end
+		end
+	end
+end
